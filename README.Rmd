@@ -14,8 +14,9 @@ knitr::opts_chunk$set(
 
 # Academic bias
 
-I sometimes still find people claiming there is no political bias in academia.
-So I made these graphs to help explain the problem.
+I sometimes find people claiming there is no political bias in academia, or
+that it isn't a big deal. So I made these graphs to help visualize the
+scale of the issue.
 
 ```{r setup}
 
@@ -25,7 +26,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(ggtext)
-library(ggforce)
+library(ggrepel)
 library(glue)
 
 cp <- readr::read_csv("dataverse_files/countypres_2000-2020.csv")
@@ -113,13 +114,34 @@ libarts <- tribble(
                 })
   )
 
+acad2 <- tribble(
+  ~Discipline, ~dem_rep,
+  "Anthropology", 42.2,
+  "Biology", 9.4,
+  "Chemistry", 4.5,
+  "Economics", 3.0,
+  "English", 26.8,
+  "Maths", 5.5,
+  "Philosophy", 11.4,
+  "Psychology", 11.5,
+  "Sociology", 27.0
+) |> 
+  rowwise() |> 
+  mutate(
+    dem_rep = dem_rep/(dem_rep+1),
+    prop_more_dem = sum(cpl$pop_share[cpl$dem_rep > dem_rep]),
+    density_y = sapply(dem_rep, function (x) {
+                  dens_data$y[which.min(abs(x - dens_data$x))]
+                })
+  )
+
 ```
 
-The density plot below shows the distribution of US counties by Democratic vote 
-share in 2020. The coloured lines show the proportion of registered Democrats,
-out of registered Republicans and Democrats, in five
-academic disciplines. I've added a zoom inset, in case you strain your eyes trying
-to spot the number of Republicans among history faculty.
+The density plot below shows the population-weighted distribution of US counties
+by Democratic vote share in 2020. The coloured lines show the proportion of
+registered Democrats, out of registered Republicans and Democrats, in five
+academic disciplines. I've added a zoom inset, in case you strain your eyes
+trying to spot the number of Republicans among history faculty.
 
 ```{r plot1}
 
@@ -162,7 +184,7 @@ ggp_main <- ggp +
 
 ggp_zoom <- ggp + 
   geom_text(data = acad, aes(y = density_y, color = Discipline, 
-                             label = round(prop_more_dem*100, 1)), 
+                             label = round(prop_more_dem*100, 2)), 
             nudge_y = 0.03) +
   coord_cartesian(xlim = c(0.89, 0.99), ylim = c(0, 0.2)) +
   labs(title = "", subtitle = "", x = "", caption = "") +
@@ -185,6 +207,82 @@ ggp_main +
            ymin = -0.05, ymax = 0.5, fill = NA,
            linewidth = 0.3, color = "grey20") +
   annotate("segment", x = c(0.87, 0.99), xend = c(0.65, 0.97), y = 0.5, yend = 2.3, 
+           linewidth = 0.3, linetype = 3)
+
+
+```
+
+
+Another set of data comes from Langbert and Stevens (2020):
+
+```{r plot1.1}
+
+subtitle <- paste0(
+              "Density is population-weighted. ",
+              "Numbers: % of population in counties with a higher Democrat share."
+            )
+ggpalt <- ggplot(cpl, aes(dem_rep)) + 
+  geom_density(aes(weight = pop), fill = "grey80", color = NA) +
+  geom_segment(data = acad2, y = 0,  
+              mapping = aes(xend = dem_rep, yend = density_y,
+                            color = Discipline), linewidth = 1.1) +
+  geom_point(data = acad2, aes(y = density_y, color = Discipline), 
+             size = 2.5) +
+  scale_y_continuous(breaks = NULL, expand = expansion(0, 0)) +
+  theme_minimal() +
+  labs(
+    x = "Democrat share", 
+    y = "",
+    title = "Share of Democrats in academic disciplines and US counties",
+    subtitle = subtitle,
+    caption = "Source: Langbert and Stevens (2020); 2020 county presidential returns; Census population estimates."
+  ) +
+  theme(
+    legend.position = "none",
+    panel.grid = element_blank(),
+    panel.border = element_blank()
+  )
+
+ggpalt_main <- ggpalt +
+  geom_text(data = acad2 |> filter(dem_rep < 0.9), 
+            aes(y = density_y, color = Discipline, 
+                label = paste(Discipline, round(prop_more_dem*100, 1))
+                ),
+            angle = 45, hjust = 0,
+            nudge_y = 0.12, check_overlap = TRUE) +
+  coord_cartesian(ylim = c(-0.1, 4))
+
+acad2 <- acad2 |> arrange(dem_rep)
+acad2$vjust <- rep_len(c(-0.5, 0.5), nrow(acad2))
+acad2$vjust[acad2$Discipline == "Anthropology"] <- 0.7
+acad2$angle <- 45
+
+ggpalt_zoom <- ggpalt + 
+  geom_text(data = acad2, aes(y = density_y, color = Discipline, 
+                             label = paste(Discipline, round(prop_more_dem*100, 1)),
+                             vjust = vjust,
+                             angle = angle),
+            hjust = -0.1) +
+  coord_cartesian(xlim = c(0.9, 1.06), ylim = c(0, 0.22)) +
+  labs(title = "", subtitle = "", x = "", caption = "") +
+  theme(
+    plot.background = element_rect(color = "grey20"),
+    plot.margin = unit(c(0,3,1,3), "mm"),
+    panel.spacing = unit(0, "mm"),
+    plot.caption = element_blank(),
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    axis.title = element_blank()
+  )
+  
+
+ggpalt_main + 
+  annotation_custom(ggplotGrob(ggpalt_zoom),
+                    xmin = 0.67, xmax = 0.97, ymin = 2.5, ymax = 3.9) +
+  annotate("rect", xmin = .87, xmax = 0.99, 
+           ymin = -0.05, ymax = 0.5, fill = NA,
+           linewidth = 0.3, color = "grey20") +
+  annotate("segment", x = c(0.87, 0.99), xend = c(0.67, 0.97), y = 0.5, yend = 2.5, 
            linewidth = 0.3, linetype = 3)
 
 
@@ -225,7 +323,7 @@ ggpla <- ggplot(cpl, aes(dem_rep)) +
     legend.position = "none",
     panel.grid = element_blank(),
     panel.border = element_blank(),
-    plot.title = element_textbox_simple(family = "Helvetica"),
+    plot.title = element_textbox_simple(family = "Helvetica", lineheight = 1.2),
     plot.subtitle = element_textbox_simple(size = 11, lineheight = 1.2)
   ) 
 
@@ -237,14 +335,21 @@ ggpla_main <- ggpla +
             # size = 0.5,
             check_overlap = TRUE)
 
+libarts$vjust <- rep_len(c(-0.5, 0.5), nrow(libarts))
+libarts$vjust[libarts$Discipline=="English"] <- 0.5
+libarts$vjust[libarts$Discipline=="Environmental"] <- -0.5
+libarts$vjust[libarts$Discipline=="Geoscience"] <- 0
+libarts$vjust[libarts$Discipline=="Sociology"] <- -0.25
+libarts$vjust[libarts$Discipline=="Theatre"] <- 0
+libarts$vjust[libarts$Discipline=="Language"] <- 1
 ggpla_zoom <- ggpla + 
   geom_text(data = libarts,
-            aes(y = density_y, label = Discipline, colour = Discipline),
-            nudge_y = 0.002, nudge_x = 0.00, angle = 45, hjust = 0, vjust = 1,
-            size = 3.5,
-            check_overlap = TRUE) +
+            aes(y = density_y, label = Discipline, colour = Discipline, 
+                vjust = vjust),
+            nudge_y = 0.002, nudge_x = 0.00, angle = 45, hjust = 0, 
+            size = 2.8) +
   scale_color_discrete() +
-  coord_cartesian(xlim = c(0.94, 1.03), ylim = c(0, 0.028)) 
+  coord_cartesian(xlim = c(0.94, 1.01), ylim = c(0, 0.036)) 
 
 ggpla_window <- ggpla_zoom + 
   theme(
@@ -255,11 +360,11 @@ ggpla_window <- ggpla_zoom +
     axis.title = element_blank()
   )
 ggpla_main + 
-  annotation_custom(ggplotGrob(ggpla_window), xmin = 0.6, xmax = 1, ymin = 2.7, 
+  annotation_custom(ggplotGrob(ggpla_window), xmin = 0.2, xmax = 1, ymin = 2.9, 
                     ymax = 4) + 
   annotate("rect", xmin = 0.94, xmax = 1, ymin = 0, ymax = 0.1, fill = NA,
            color = "grey20", linewidth = 0.3) +
-  annotate("segment", x = c(0.94, 1), xend = c(0.6, 1), y = 0.1, yend = 2.7,
+  annotate("segment", x = c(0.94, 1), xend = c(0.2, 1), y = 0.1, yend = 2.9,
            linewidth = 0.3, linetype = 3)
 
 ```
@@ -270,8 +375,8 @@ ggpla_main +
 
    A little bit, yes. But the data is real.
 
-* This isn't fair, you're comparing registered Democrats in faculty to 
-  Democrat voters in the US.
+* This isn't fair, you're comparing *registered* Democrats in faculty to 
+  Democrat *voters* in the US.
   
    Short answer: dude, suppose I'm out by a factor of ten.
 
@@ -319,3 +424,12 @@ ggp2 +
   coord_cartesian(ylim = c(-0.1, 4))
 
 ```
+
+
+# Sources
+
+Langbert, M., Quain, A.J. and Klein, D.B., 2016. Faculty voter registration in economics, history, journalism, law, and psychology. Econ Journal Watch, 13(3), pp.422-451.
+
+Langbert, M., 2018. Homogenous: The political affiliations of elite liberal arts college faculty. Academic Questions, 31(2), pp.186-197.
+
+Langbert, M. and Stevens, S., 2020. Partisan registration and contributions of faculty in flagship colleges. National Association of Scholars, 17.
