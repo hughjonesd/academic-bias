@@ -31,6 +31,13 @@ engineering faculty.
 
 # FAQ
 
+- How did you make those cool plots?
+
+  After writing the first version of this, I was inspired to create a
+  [little R package](https://github.com/hughjonesd/ggmagnify) for making
+  insets in ggplot plots. Don’t say the culture war never gave you
+  anything!
+
 - Is this satire?
 
   A little bit, yes. But the data is real.

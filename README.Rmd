@@ -28,6 +28,7 @@ library(ggplot2)
 library(ggtext)
 library(ggrepel)
 library(glue)
+library(ggmagnify)
 
 cp <- readr::read_csv("dataverse_files/countypres_2000-2020.csv")
 cpl <- cp |> 
@@ -173,43 +174,28 @@ ggp <- ggplot(cpl, aes(dem_rep)) +
     panel.grid = element_blank(),
     panel.border = element_blank(),
     plot.title = element_textbox_simple(family = "Helvetica"),
-    plot.subtitle = element_textbox_simple(size = 11, lineheight = 1.2)
-  )
+    plot.subtitle = element_textbox_simple(size = 11, lineheight = 1.2),
+    plot.background = element_rect(fill = "white")
+  ) + 
+  coord_cartesian(ylim = c(-0.1, 4))
+
+ggm <- ggmagnify(ggp, xlim = c(.89, .99), ylim = c(-0.01, 0.2), 
+                 inset_xlim = c(.65, .97), inset_ylim = c(2.3, 3.9),
+                 compose = FALSE, shadow = TRUE)
+
+ggm$inset <- ggm$inset + geom_text(data = acad, 
+                                   aes(y = density_y, color = Discipline,
+                                       label = round(prop_more_dem*100, 2)),
+                                  nudge_y = 0.03)
+
 
 ggp_main <- ggp + 
   geom_text(data = acad, aes(y = density_y, color = Discipline, 
                              label = round(prop_more_dem*100, 1)), 
-            nudge_y = 0.12) +
-  coord_cartesian(ylim = c(-0.1, 4))
-
-ggp_zoom <- ggp + 
-  geom_text(data = acad, aes(y = density_y, color = Discipline, 
-                             label = round(prop_more_dem*100, 2)), 
-            nudge_y = 0.03) +
-  coord_cartesian(xlim = c(0.89, 0.99), ylim = c(0, 0.2)) +
-  labs(title = "", subtitle = "", x = "", caption = "") +
-  theme(
-    plot.background = element_rect(color = "grey20"),
-    plot.margin = unit(c(0,3,1,3), "mm"),
-    panel.spacing = unit(0, "mm"),
-    plot.caption = element_blank(),
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    axis.title = element_blank()
-  )
+            nudge_y = 0.12)
   
-grob_zoom <- ggplotGrob(ggp_zoom)
 
-
-ggp_main + 
-  annotation_custom(grob_zoom, xmin = 0.65, xmax = 0.97, ymin = 2.3, ymax = 3.9) +
-  annotate("rect", xmin = .87, xmax = 0.99, 
-           ymin = -0.05, ymax = 0.5, fill = NA,
-           linewidth = 0.3, color = "grey20") +
-  annotate("segment", x = c(0.87, 0.99), xend = c(0.65, 0.97), y = 0.5, yend = 2.3, 
-           linewidth = 0.3, linetype = 3)
-
-
+compose(ggm, ggp_main)
 ```
 
 
@@ -257,35 +243,20 @@ acad2$vjust <- rep_len(c(-0.5, 0.5), nrow(acad2))
 acad2$vjust[acad2$Discipline == "Anthropology"] <- 0.7
 acad2$angle <- 45
 
-ggpalt_zoom <- ggpalt + 
+
+ggmalt <- ggmagnify(ggpalt, xlim = c(0.9, 1.06), ylim = c(-0.01, 0.22), 
+                    inset_xlim = c(.34, .84), inset_ylim = c(2.4, 3.9), 
+                    compose = FALSE, shadow = TRUE)
+
+ggmalt$inset <- ggmalt$inset + 
   geom_text(data = acad2, aes(y = density_y, color = Discipline, 
-                             label = paste(Discipline, round(prop_more_dem*100, 1)),
-                             vjust = vjust,
-                             angle = angle),
+                              label = paste(Discipline, round(prop_more_dem*100, 1)),
+                              vjust = vjust,
+                              angle = angle),
             hjust = -0.1) +
-  coord_cartesian(xlim = c(0.9, 1.06), ylim = c(0, 0.22)) +
-  labs(title = "", subtitle = "", x = "", caption = "") +
-  theme(
-    plot.background = element_rect(color = "grey20"),
-    plot.margin = unit(c(0,3,1,3), "mm"),
-    panel.spacing = unit(0, "mm"),
-    plot.caption = element_blank(),
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    axis.title = element_blank()
-  )
-  
+  theme(plot.background = element_rect(fill = "white"))
 
-ggpalt_main + 
-  annotation_custom(ggplotGrob(ggpalt_zoom),
-                    xmin = 0.67, xmax = 0.97, ymin = 2.5, ymax = 3.9) +
-  annotate("rect", xmin = .87, xmax = 0.99, 
-           ymin = -0.05, ymax = 0.5, fill = NA,
-           linewidth = 0.3, color = "grey20") +
-  annotate("segment", x = c(0.87, 0.99), xend = c(0.67, 0.97), y = 0.5, yend = 2.5, 
-           linewidth = 0.3, linetype = 3)
-
-
+compose(ggmalt, ggpalt_main)
 ```
 
 
@@ -324,16 +295,21 @@ ggpla <- ggplot(cpl, aes(dem_rep)) +
     panel.grid = element_blank(),
     panel.border = element_blank(),
     plot.title = element_textbox_simple(family = "Helvetica", lineheight = 1.2),
-    plot.subtitle = element_textbox_simple(size = 11, lineheight = 1.2)
+    plot.subtitle = element_textbox_simple(size = 11, lineheight = 1.2),
+    plot.background = element_rect(fill = "white")
   ) 
 
+
+ggmla <- ggmagnify(ggpla, xlim = c(0.94, 1.01), ylim = c(-0.01, 0.036),
+                   inset_xlim = c(.2, 1) , inset_ylim = c(2.9, 4),
+                   compose = FALSE, shadow = TRUE)
 
 ggpla_main <- ggpla + 
   geom_text(data = libarts |> filter(dem_rep < 0.9),
             aes(y = density_y, label = Discipline, colour = Discipline),
             nudge_y = 0.06, nudge_x = 0.00, angle = 45, hjust = 0, vjust = 1,
             # size = 0.5,
-            check_overlap = TRUE)
+            check_overlap = TRUE) 
 
 libarts$vjust <- rep_len(c(-0.5, 0.5), nrow(libarts))
 libarts$vjust[libarts$Discipline=="English"] <- 0.5
@@ -342,35 +318,25 @@ libarts$vjust[libarts$Discipline=="Geoscience"] <- 0
 libarts$vjust[libarts$Discipline=="Sociology"] <- -0.25
 libarts$vjust[libarts$Discipline=="Theatre"] <- 0
 libarts$vjust[libarts$Discipline=="Language"] <- 1
-ggpla_zoom <- ggpla + 
+
+ggmla$inset <- ggmla$inset + 
   geom_text(data = libarts,
             aes(y = density_y, label = Discipline, colour = Discipline, 
                 vjust = vjust),
             nudge_y = 0.002, nudge_x = 0.00, angle = 45, hjust = 0, 
-            size = 2.8) +
-  scale_color_discrete() +
-  coord_cartesian(xlim = c(0.94, 1.01), ylim = c(0, 0.036)) 
+            size = 2.8) 
 
-ggpla_window <- ggpla_zoom + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank(),
-    plot.background = element_rect(color = "grey20"),
-    axis.title = element_blank()
-  )
-ggpla_main + 
-  annotation_custom(ggplotGrob(ggpla_window), xmin = 0.2, xmax = 1, ymin = 2.9, 
-                    ymax = 4) + 
-  annotate("rect", xmin = 0.94, xmax = 1, ymin = 0, ymax = 0.1, fill = NA,
-           color = "grey20", linewidth = 0.3) +
-  annotate("segment", x = c(0.94, 1), xend = c(0.2, 1), y = 0.1, yend = 2.9,
-           linewidth = 0.3, linetype = 3)
-
+compose(ggmla, ggpla_main)
 ```
 
 # FAQ
 
+* How did you make those cool plots?
+
+   After writing the first version of this, I was inspired to create a 
+   [little R package](https://github.com/hughjonesd/ggmagnify) for making
+   insets in ggplot plots. Don't say the culture war never gave you anything!
+   
 * Is this satire?
 
    A little bit, yes. But the data is real.
