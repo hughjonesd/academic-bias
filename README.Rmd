@@ -179,23 +179,19 @@ ggp <- ggplot(cpl, aes(dem_rep)) +
   ) + 
   coord_cartesian(ylim = c(-0.1, 4))
 
-ggm <- ggmagnify(ggp, xlim = c(.89, .99), ylim = c(-0.01, 0.2), 
-                 inset_xlim = c(.65, .97), inset_ylim = c(2.3, 3.9),
-                 compose = FALSE, shadow = TRUE)
-
-ggm$inset <- ggm$inset + geom_text(data = acad, 
+ggpi <- ggp + geom_text(data = acad, 
                                    aes(y = density_y, color = Discipline,
                                        label = round(prop_more_dem*100, 2)),
                                   nudge_y = 0.03)
 
-
-ggp_main <- ggp + 
+ggp + 
   geom_text(data = acad, aes(y = density_y, color = Discipline, 
                              label = round(prop_more_dem*100, 1)), 
-            nudge_y = 0.12)
-  
-
-compose(ggm, ggp_main)
+            nudge_y = 0.12) + 
+  geom_magnify(
+    x = 0.94, width = 0.1, y = 0.095, height = 0.21,
+    to_x = .81, to_y = 2.9, magnify = c(3.2, 7.6), plot = ggpi
+  )
 ```
 
 
@@ -227,16 +223,8 @@ ggpalt <- ggplot(cpl, aes(dem_rep)) +
     legend.position = "none",
     panel.grid = element_blank(),
     panel.border = element_blank()
-  )
+  ) 
 
-ggpalt_main <- ggpalt +
-  geom_text(data = acad2 |> filter(dem_rep < 0.9), 
-            aes(y = density_y, color = Discipline, 
-                label = paste(Discipline, round(prop_more_dem*100, 1))
-                ),
-            angle = 45, hjust = 0,
-            nudge_y = 0.12, check_overlap = TRUE) +
-  coord_cartesian(ylim = c(-0.1, 4))
 
 acad2 <- acad2 |> arrange(dem_rep)
 acad2$vjust <- rep_len(c(-0.5, 0.5), nrow(acad2))
@@ -244,19 +232,24 @@ acad2$vjust[acad2$Discipline == "Anthropology"] <- 0.7
 acad2$angle <- 45
 
 
-ggmalt <- ggmagnify(ggpalt, xlim = c(0.9, 1.06), ylim = c(-0.01, 0.22), 
-                    inset_xlim = c(.34, .84), inset_ylim = c(2.4, 3.9), 
-                    compose = FALSE, shadow = TRUE)
-
-ggmalt$inset <- ggmalt$inset + 
-  geom_text(data = acad2, aes(y = density_y, color = Discipline, 
+ggpalt_i <- ggpalt + geom_text(data = acad2, aes(y = density_y, color = Discipline, 
                               label = paste(Discipline, round(prop_more_dem*100, 1)),
                               vjust = vjust,
                               angle = angle),
             hjust = -0.1) +
   theme(plot.background = element_rect(fill = "white"))
 
-compose(ggmalt, ggpalt_main)
+ggpalt + 
+  coord_cartesian(ylim = c(-0.1, 4)) + 
+  geom_text(data = acad2 |> filter(dem_rep < 0.9), 
+            aes(y = density_y, color = Discipline, 
+                label = paste(Discipline, round(prop_more_dem*100, 1))
+                ),
+            angle = 45, hjust = 0,
+            nudge_y = 0.12, check_overlap = TRUE) +
+  geom_magnify(x = 0.98, width = 0.15, y = 0.105, height = 0.23,
+               to_x = 0.59, to_y = 3.15, magnify = c(3.33, 6.5), 
+               plot = ggpalt_i)
 ```
 
 
@@ -299,18 +292,6 @@ ggpla <- ggplot(cpl, aes(dem_rep)) +
     plot.background = element_rect(fill = "white")
   ) 
 
-
-ggmla <- ggmagnify(ggpla, xlim = c(0.94, 1.01), ylim = c(-0.01, 0.036),
-                   inset_xlim = c(.2, 1) , inset_ylim = c(2.9, 4),
-                   compose = FALSE, shadow = TRUE)
-
-ggpla_main <- ggpla + 
-  geom_text(data = libarts |> filter(dem_rep < 0.9),
-            aes(y = density_y, label = Discipline, colour = Discipline),
-            nudge_y = 0.06, nudge_x = 0.00, angle = 45, hjust = 0, vjust = 1,
-            # size = 0.5,
-            check_overlap = TRUE) 
-
 libarts$vjust <- rep_len(c(-0.5, 0.5), nrow(libarts))
 libarts$vjust[libarts$Discipline=="English"] <- 0.5
 libarts$vjust[libarts$Discipline=="Environmental"] <- -0.5
@@ -319,14 +300,22 @@ libarts$vjust[libarts$Discipline=="Sociology"] <- -0.25
 libarts$vjust[libarts$Discipline=="Theatre"] <- 0
 libarts$vjust[libarts$Discipline=="Language"] <- 1
 
-ggmla$inset <- ggmla$inset + 
-  geom_text(data = libarts,
+ggpla_i <- ggpla + geom_text(data = libarts,
             aes(y = density_y, label = Discipline, colour = Discipline, 
                 vjust = vjust),
             nudge_y = 0.002, nudge_x = 0.00, angle = 45, hjust = 0, 
             size = 2.8) 
+ggpla + 
+  geom_text(data = libarts |> filter(dem_rep < 0.9),
+            aes(y = density_y, label = Discipline, colour = Discipline),
+            nudge_y = 0.06, nudge_x = 0.00, angle = 45, hjust = 0, vjust = 1,
+            check_overlap = TRUE) +
+  geom_magnify(x = 0.975, width = 0.07, y = 0.0225, height = 0.046,
+               to_x = 0.6, to_y = 3.45, magnify = c(11.4 ,23.91), 
+               plot = ggpla_i)
 
-compose(ggmla, ggpla_main)
+
+
 ```
 
 # FAQ
